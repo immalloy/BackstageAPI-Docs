@@ -303,6 +303,56 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Votes'
+  /mods/{modId}/like:
+    parameters:
+      - $ref: '#/components/parameters/ModId'
+    post:
+      tags: [Mods]
+      summary: Set whether the current user likes a mod
+      operationId: setModLike
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [on]
+              properties:
+                on: { type: boolean }
+      responses:
+        '200':
+          description: Updated vote totals and current-user state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Votes'
+  /mods/{modId}/rating:
+    parameters:
+      - $ref: '#/components/parameters/ModId'
+    put:
+      tags: [Mods]
+      summary: Set the current user's star rating for a mod
+      operationId: setModRating
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [stars]
+              properties:
+                stars: { type: integer }
+      responses:
+        '200':
+          description: Updated vote totals and current-user state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Votes'
   /users/{userId}:
     parameters:
       - $ref: '#/components/parameters/UserId'
