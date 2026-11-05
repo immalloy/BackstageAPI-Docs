@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Funkin' Backstage API Docs</title>
+  <meta name="description" content="Unofficial Funkin' Backstage API reference." />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+  <script>
+    Scalar.createApiReference("#app", {
+      url: "./spec/openapi.yaml",
+      layout: "modern",
+      theme: "default",
+      darkMode: false,
+      hideDarkModeToggle: false,
+      hideDownloadButton: false,
+      hideModels: false,
+      hideSearch: false,
+      hideTestRequestButton: false,
+      showOperationId: false,
+      showSidebar: true,
+      defaultOpenAllTags: false,
+      expandAllModelSections: false,
+      expandAllResponses: false,
+      orderRequiredPropertiesFirst: true,
+      documentDownloadType: "yaml",
+      operationTitleSource: "summary",
+      persistAuth: true,
+      searchHotKey: "k",
+      proxyUrl: "https://proxy.scalar.com",
+      metaData: {
+        title: "Funkin' Backstage API Docs",
+        description: "Unofficial Funkin' Backstage API reference.",
+        ogTitle: "Funkin' Backstage API Docs",
+        ogDescription: "Unofficial Funkin' Backstage API reference."
+      }
+    });
+  </script>
+</body>
+</html>

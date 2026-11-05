@@ -1,0 +1,483 @@
+openapi: 3.1.0
+info:
+  title: Funkin' Backstage API
+  version: '2026-11-04'
+  description: >-
+    Unofficial reference based on a browser capture from 2026-11-04. Routes and
+    response shapes may change.
+servers:
+  - url: https://api.funkinbackstage.net
+    description: Funkin' Backstage API
+tags:
+  - name: Site
+  - name: Mods
+  - name: Users
+  - name: Teams
+  - name: Session
+paths:
+  /site:
+    get:
+      tags: [Site]
+      summary: Get site configuration and public information
+      operationId: getSite
+      responses:
+        default:
+          description: Site configuration. The HAR did not record an HTTP status for this response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteInfo'
+  /auth/me:
+    get:
+      tags: [Session]
+      summary: Get the current session user
+      description: The capture included this request in a signed-in session. Anonymous behavior was not captured.
+      operationId: getCurrentUser
+      responses:
+        '200':
+          description: Current session information.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    oneOf:
+                      - $ref: '#/components/schemas/SessionUser'
+                      - type: 'null'
+  /notifications:
+    get:
+      tags: [Session]
+      summary: Get notifications for the current session
+      description: Only a signed-in request was captured.
+      operationId: getNotifications
+      responses:
+        '200':
+          description: Notification items and unread count.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+                  unread:
+                    type: integer
+  /mods:
+    get:
+      tags: [Mods]
+      summary: List mods
+      operationId: listMods
+      responses:
+        '200':
+          description: List of mods.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ModSummary'
+  /mods/{modId}:
+    parameters:
+      - $ref: '#/components/parameters/ModId'
+    get:
+      tags: [Mods]
+      summary: Get a mod
+      operationId: getMod
+      responses:
+        '200':
+          description: Mod details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mod'
+  /mods/{modId}/card:
+    parameters:
+      - $ref: '#/components/parameters/ModId'
+    get:
+      tags: [Mods]
+      summary: Get a mod card image
+      operationId: getModCard
+      responses:
+        '200':
+          description: Image bytes. Captured responses used JPEG, PNG, or WebP.
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+            image/png:
+              schema: { type: string, format: binary }
+            image/webp:
+              schema: { type: string, format: binary }
+  /mods/{modId}/thumbnail:
+    parameters:
+      - $ref: '#/components/parameters/ModId'
+    get:
+      tags: [Mods]
+      summary: Get a mod thumbnail
+      operationId: getModThumbnail
+      responses:
+        '200':
+          description: Image bytes. Captured responses used JPEG, PNG, or WebP.
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+            image/png:
+              schema: { type: string, format: binary }
+            image/webp:
+              schema: { type: string, format: binary }
+  /mods/{modId}/icon:
+    parameters:
+      - $ref: '#/components/parameters/ModId'
+    get:
+      tags: [Mods]
+      summary: Get a mod icon
+      operationId: getModIcon
+      responses:
+        '200':
+          description: Image bytes. Captured responses used PNG or WebP.
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+            image/webp:
+              schema: { type: string, format: binary }
+  /mods/{modId}/screenshots/{index}:
+    parameters:
+      - $ref: '#/components/parameters/ModId'
+      - name: index
+        in: path
+        required: true
+        description: Zero-based screenshot index.
+        schema: { type: integer, minimum: 0 }
+    get:
+      tags: [Mods]
+      summary: Get a mod screenshot
+      operationId: getModScreenshot
+      responses:
+        '200':
+          description: Image bytes. Captured responses used JPEG, PNG, or WebP.
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+            image/png:
+              schema: { type: string, format: binary }
+            image/webp:
+              schema: { type: string, format: binary }
+  /mods/{modId}/comments:
+    parameters:
+      - $ref: '#/components/parameters/ModId'
+    get:
+      tags: [Mods]
+      summary: List comments on a mod
+      operationId: listModComments
+      responses:
+        '200':
+          description: Comments returned for the mod.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Comment'
+  /mods/{modId}/votes:
+    parameters:
+      - $ref: '#/components/parameters/ModId'
+    get:
+      tags: [Mods]
+      summary: Get mod vote totals and current-user vote state
+      operationId: getModVotes
+      responses:
+        '200':
+          description: Vote totals and session-specific vote state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Votes'
+  /users/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Users]
+      summary: Get a user profile
+      operationId: getUser
+      responses:
+        '200':
+          description: User profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /users/{userId}/avatar:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Users]
+      summary: Get a user's avatar
+      operationId: getUserAvatar
+      responses:
+        '200':
+          description: Image bytes. Captured responses used JPEG or WebP.
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+            image/webp:
+              schema: { type: string, format: binary }
+  /users/{userId}/banner:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Users]
+      summary: Get a user's profile banner
+      operationId: getUserBanner
+      responses:
+        '200':
+          description: Image bytes. Captured response used WebP.
+          content:
+            image/webp:
+              schema: { type: string, format: binary }
+  /users/{userId}/posts:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Users]
+      summary: List a user's posts
+      operationId: listUserPosts
+      responses:
+        '200':
+          description: Posts authored by the user.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Post'
+  /teams/{teamId}:
+    parameters:
+      - $ref: '#/components/parameters/TeamId'
+    get:
+      tags: [Teams]
+      summary: Get a team
+      operationId: getTeam
+      responses:
+        '200':
+          description: Team details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+  /teams/{teamId}/icon:
+    parameters:
+      - $ref: '#/components/parameters/TeamId'
+    get:
+      tags: [Teams]
+      summary: Get a team's icon
+      operationId: getTeamIcon
+      responses:
+        '200':
+          description: Image bytes. Captured responses used JPEG, PNG, or WebP.
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+            image/png:
+              schema: { type: string, format: binary }
+            image/webp:
+              schema: { type: string, format: binary }
+  /teams/{teamId}/logo:
+    parameters:
+      - $ref: '#/components/parameters/TeamId'
+    get:
+      tags: [Teams]
+      summary: Get a team's logo
+      operationId: getTeamLogo
+      responses:
+        '200':
+          description: Image bytes. Captured response used PNG.
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+  /teams/{teamId}/banner:
+    parameters:
+      - $ref: '#/components/parameters/TeamId'
+    get:
+      tags: [Teams]
+      summary: Get a team's banner
+      operationId: getTeamBanner
+      responses:
+        '200':
+          description: Image bytes. Captured response used PNG.
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+components:
+  parameters:
+    ModId:
+      name: modId
+      in: path
+      required: true
+      description: Mod identifier shown in the site's mod URLs.
+      schema: { type: string }
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema: { type: integer }
+    TeamId:
+      name: teamId
+      in: path
+      required: true
+      schema: { type: integer }
+  schemas:
+    SiteInfo:
+      type: object
+      properties:
+        announcement: { type: string }
+        uploadsOpen: { type: boolean }
+        signupsOpen: { type: boolean }
+        chatOpen: { type: boolean }
+        slowMode: { type: integer }
+        todaysPick: { type: [string, 'null'] }
+        chatRules: { type: array, items: { type: string } }
+        modRules: { type: array, items: { type: string } }
+        about: { type: object, additionalProperties: true }
+        supporters: { type: array, items: { type: string } }
+        inviteOnly: { type: boolean }
+    SessionUser:
+      type: object
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        role: { type: string }
+        ban: { type: [object, 'null'], additionalProperties: true }
+        mute: { type: [object, 'null'], additionalProperties: true }
+        restricted: { type: [object, 'null'], additionalProperties: true }
+        avatar: { type: integer }
+        theme: { type: string }
+        background: { type: integer }
+        discord: { type: boolean }
+        blocked: { type: array, items: { type: integer } }
+    ModSummary:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        tagline: { type: string }
+        engine: { type: string }
+        category: { type: string }
+        thumbnail: { type: string }
+        card: { type: string }
+        team: { oneOf: [{ $ref: '#/components/schemas/TeamSummary' }, { type: 'null' }] }
+        submitter: { $ref: '#/components/schemas/UserSummary' }
+        approved: { type: boolean }
+        featured: { type: boolean }
+        withheld: { type: [string, 'null'] }
+        downloads: { type: integer }
+        views: { type: integer }
+        likes: { type: integer }
+        stars: { type: number }
+        ratings: { type: integer }
+        uploaded: { type: string, format: date-time }
+        updated: { type: string }
+        credits: { type: array, items: { type: object, additionalProperties: true } }
+        wip: { oneOf: [{ $ref: '#/components/schemas/Wip' }, { type: 'null' }] }
+    Mod:
+      allOf:
+        - $ref: '#/components/schemas/ModSummary'
+        - type: object
+          properties:
+            description: { type: string }
+            icon: { type: string }
+            screenshots: { type: array, items: { type: string } }
+            videos: { type: array, items: { type: string, format: uri } }
+            files: { type: array, items: { type: object, additionalProperties: true } }
+            miscFiles: { type: array, items: { type: object, additionalProperties: true } }
+            socials: { type: array, items: { type: object, additionalProperties: true } }
+            creator: { type: string }
+            originalMod: { type: string }
+            updates: { type: array, items: { type: object, additionalProperties: true } }
+    Wip:
+      type: object
+      properties:
+        stage: { type: string }
+        progress: { type: number }
+    UserSummary:
+      type: object
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        avatar: { type: integer }
+    User:
+      allOf:
+        - $ref: '#/components/schemas/UserSummary'
+        - type: object
+          properties:
+            role: { type: string }
+            joined: { type: string, format: date-time }
+            displayName: { type: string }
+            quote: { type: string }
+            about: { type: string }
+            birthday: { type: [object, 'null'], additionalProperties: true }
+            socials: { type: object, additionalProperties: { type: string } }
+            misc: { type: array, items: { type: object, additionalProperties: true } }
+            favourites: { type: array, items: { type: string } }
+            banner: { type: integer }
+            counts: { type: object, additionalProperties: { type: integer } }
+            friends: { type: array, items: { $ref: '#/components/schemas/UserSummary' } }
+            online: { type: boolean }
+            banned: { type: boolean }
+            relation: { type: object, additionalProperties: true }
+            badges: { type: array, items: { type: object, additionalProperties: true } }
+            teams: { type: array, items: { $ref: '#/components/schemas/TeamSummary' } }
+    Post:
+      type: object
+      properties:
+        id: { type: integer }
+        author: { type: integer }
+        title: { type: string }
+        body: { type: string }
+        at: { type: string, format: date-time }
+        edited: { type: string }
+        likes: { type: integer }
+        liked: { type: boolean }
+        replies: { type: integer }
+    Comment:
+      type: object
+      properties:
+        replyTo: { type: [object, 'null'], additionalProperties: true }
+        id: { type: integer }
+        contents: { type: string }
+        at: { type: string, format: date-time }
+        poster: { type: object, additionalProperties: true }
+    Votes:
+      type: object
+      properties:
+        likes: { type: integer }
+        stars: { type: number }
+        ratings: { type: integer }
+        liked: { type: boolean }
+        rating: { type: number }
+    TeamSummary:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        icon: { type: integer }
+        logo: { type: integer }
+    Team:
+      allOf:
+        - $ref: '#/components/schemas/TeamSummary'
+        - type: object
+          properties:
+            tagline: { type: string }
+            description: { type: string }
+            banner: { type: integer }
+            links: { type: array, items: { type: string, format: uri } }
+            joinMode: { type: string }
+            owner: { type: integer }
+            created: { type: string, format: date-time }
+            members: { type: array, items: { type: object, additionalProperties: true } }
+            followers: { type: integer }
+            relation: { type: object, additionalProperties: true }
+            requests: { type: array, items: { type: object, additionalProperties: true } }
+            invites: { type: array, items: { type: object, additionalProperties: true } }
