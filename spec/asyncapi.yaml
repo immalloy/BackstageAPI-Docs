@@ -1,0 +1,17 @@
+asyncapi: 3.0.0
+info:
+  title: Funkin' Backstage Chat WebSocket
+  version: '2026-11-04'
+  description: >-
+    The November 3 capture recorded two successful WebSocket handshakes and
+    no frames.
+servers:
+  backstage:
+    host: api.funkinbackstage.net
+    protocol: wss
+    description: Funkin' Backstage secure WebSocket server.
+channels:
+  chat:
+    address: /chat/ws
+    title: Chat WebSocket
+    description: Message directions and payload formats are unknown.

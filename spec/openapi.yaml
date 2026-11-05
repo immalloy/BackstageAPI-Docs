@@ -14,6 +14,9 @@ tags:
   - name: Users
   - name: Teams
   - name: Session
+  - name: Chat
+  - name: Staff
+    description: Staff routes were captured in a signed-in session. Role requirements were not verified.
 paths:
   /site:
     get:
@@ -33,6 +36,8 @@ paths:
       summary: Get the current session user
       description: The capture included this request in a signed-in session. Anonymous behavior was not captured.
       operationId: getCurrentUser
+      security:
+        - sessionCookie: []
       responses:
         '200':
           description: Current session information.
@@ -45,12 +50,43 @@ paths:
                     oneOf:
                       - $ref: '#/components/schemas/SessionUser'
                       - type: 'null'
+  /auth/login:
+    post:
+      tags: [Session]
+      summary: Sign in
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [identifier, password]
+              properties:
+                identifier: { type: string }
+                password: { type: string, format: password, writeOnly: true }
+      responses:
+        '200':
+          description: Signed-in user. The response sets the `fb_session` cookie.
+          headers:
+            Set-Cookie:
+              description: Session cookie.
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/LoginUser'
   /notifications:
     get:
       tags: [Session]
       summary: Get notifications for the current session
       description: Only a signed-in request was captured.
       operationId: getNotifications
+      security:
+        - sessionCookie: []
       responses:
         '200':
           description: Notification items and unread count.
@@ -66,6 +102,82 @@ paths:
                       additionalProperties: true
                   unread:
                     type: integer
+  /notifications/read:
+    post:
+      tags: [Session]
+      summary: Mark notifications as read
+      operationId: markNotificationsRead
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Updated notification list and unread count.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+                  unread:
+                    type: integer
+  /chat/read:
+    get:
+      tags: [Chat]
+      summary: Get recent chat messages
+      description: The capture included this request in a signed-in session.
+      operationId: getChatMessages
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Chat messages.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatMessage'
+  /settings:
+    get:
+      tags: [Session]
+      summary: Get account settings
+      operationId: getSettings
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Account settings. No captured values are included.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settings'
+    patch:
+      tags: [Session]
+      summary: Update account settings
+      description: The capture shows a theme update; other writable fields are unknown.
+      operationId: updateSettings
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [theme]
+              properties:
+                theme: { type: string }
+      responses:
+        '200':
+          description: Updated settings.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settings'
   /mods:
     get:
       tags: [Mods]
@@ -103,7 +215,6 @@ paths:
       operationId: getModCard
       responses:
         '200':
-          description: Image bytes. Captured responses used JPEG, PNG, or WebP.
           content:
             image/jpeg:
               schema: { type: string, format: binary }
@@ -120,7 +231,6 @@ paths:
       operationId: getModThumbnail
       responses:
         '200':
-          description: Image bytes. Captured responses used JPEG, PNG, or WebP.
           content:
             image/jpeg:
               schema: { type: string, format: binary }
@@ -137,7 +247,6 @@ paths:
       operationId: getModIcon
       responses:
         '200':
-          description: Image bytes. Captured responses used PNG or WebP.
           content:
             image/png:
               schema: { type: string, format: binary }
@@ -157,7 +266,6 @@ paths:
       operationId: getModScreenshot
       responses:
         '200':
-          description: Image bytes. Captured responses used JPEG, PNG, or WebP.
           content:
             image/jpeg:
               schema: { type: string, format: binary }
@@ -218,7 +326,6 @@ paths:
       operationId: getUserAvatar
       responses:
         '200':
-          description: Image bytes. Captured responses used JPEG or WebP.
           content:
             image/jpeg:
               schema: { type: string, format: binary }
@@ -233,7 +340,6 @@ paths:
       operationId: getUserBanner
       responses:
         '200':
-          description: Image bytes. Captured response used WebP.
           content:
             image/webp:
               schema: { type: string, format: binary }
@@ -253,6 +359,248 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Post'
+  /users/{userId}/card:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Users]
+      summary: Get a user's profile card
+      operationId: getUserCard
+      responses:
+        '200':
+          description: Compact user profile and counts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCardDetail'
+  /users/{userId}/followers:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Users]
+      summary: List a user's followers
+      operationId: listUserFollowers
+      responses:
+        '200':
+          description: User cards for followers.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserCard'
+  /users/{userId}/following:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Users]
+      summary: List users followed by a user
+      operationId: listUserFollowing
+      responses:
+        '200':
+          description: User cards for followed accounts.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserCard'
+  /users/{userId}/friends:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Users]
+      summary: List a user's friends
+      operationId: listUserFriends
+      responses:
+        '200':
+          description: User cards for friends.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserCard'
+  /users/cards:
+    get:
+      tags: [Users]
+      summary: Get profile cards for multiple users
+      operationId: getUserCards
+      parameters:
+        - name: ids
+          in: query
+          required: true
+          description: Comma-separated user IDs.
+          style: form
+          explode: false
+          schema:
+            type: array
+            items: { type: integer }
+      responses:
+        '200':
+          description: User cards.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserCard'
+  /users/me/requests:
+    get:
+      tags: [Session]
+      summary: Get sent and received friend requests
+      description: Session-specific endpoint observed in a signed-in request.
+      operationId: getFriendRequests
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Incoming and sent requests.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  incoming:
+                    type: array
+                    items: { type: object, additionalProperties: true }
+                  sent:
+                    type: array
+                    items: { type: object, additionalProperties: true }
+  /users/me/blocks:
+    get:
+      tags: [Session]
+      summary: List blocked users
+      description: The captured response was empty, so blocked-user item fields are unknown.
+      operationId: listBlockedUsers
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Blocked users.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: object, additionalProperties: true }
+  /staff/overview:
+    get:
+      tags: [Staff]
+      summary: Get staff dashboard counts
+      operationId: getStaffOverview
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Dashboard counts, staff list, and report reasons.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffOverview'
+  /staff/reports:
+    get:
+      tags: [Staff]
+      summary: List staff reports
+      operationId: listStaffReports
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: Reports and review status.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StaffReport'
+  /staff/users:
+    get:
+      tags: [Staff]
+      summary: Search staff user records
+      description: The captured response was empty.
+      operationId: searchStaffUsers
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: Matching user records. Item fields were not captured.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: object, additionalProperties: true }
+  /staff/penalized:
+    get:
+      tags: [Staff]
+      summary: List penalized users
+      operationId: listPenalizedUsers
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: User records with ban and mute fields.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PenalizedUser'
+  /staff/mods:
+    get:
+      tags: [Staff]
+      summary: List mods for staff review
+      operationId: listStaffMods
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Mod records with owner and withheld fields.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StaffMod'
+  /staff/site:
+    get:
+      tags: [Staff]
+      summary: Get staff site settings
+      operationId: getStaffSiteSettings
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Site settings and blocked words.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffSiteSettings'
+  /staff/log:
+    get:
+      tags: [Staff]
+      summary: List staff actions
+      operationId: listStaffActions
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Staff action records.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StaffAction'
   /teams/{teamId}:
     parameters:
       - $ref: '#/components/parameters/TeamId'
@@ -276,7 +624,6 @@ paths:
       operationId: getTeamIcon
       responses:
         '200':
-          description: Image bytes. Captured responses used JPEG, PNG, or WebP.
           content:
             image/jpeg:
               schema: { type: string, format: binary }
@@ -293,7 +640,6 @@ paths:
       operationId: getTeamLogo
       responses:
         '200':
-          description: Image bytes. Captured response used PNG.
           content:
             image/png:
               schema: { type: string, format: binary }
@@ -306,11 +652,15 @@ paths:
       operationId: getTeamBanner
       responses:
         '200':
-          description: Image bytes. Captured response used PNG.
           content:
             image/png:
               schema: { type: string, format: binary }
 components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: fb_session
   parameters:
     ModId:
       name: modId
@@ -329,6 +679,87 @@ components:
       required: true
       schema: { type: integer }
   schemas:
+    LoginUser:
+      type: object
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        role: { type: string }
+        avatar: { type: integer }
+        theme: { type: string }
+        background: { type: integer }
+        discord: { type: boolean }
+        blocked: { type: array, items: { type: integer } }
+    Settings:
+      type: object
+      properties:
+        username: { type: string }
+        email: { type: string, format: email }
+        hasPassword: { type: boolean }
+        friendRequests: { type: string }
+        theme: { type: string }
+        background: { type: integer }
+        discord: { type: object, additionalProperties: true }
+    StaffOverview:
+      type: object
+      properties:
+        openReports: { type: integer }
+        penalized: { type: integer }
+        staff:
+          type: array
+          items: { $ref: '#/components/schemas/UserCard' }
+        users: { type: integer }
+        reasons: { type: array, items: {} }
+    StaffReport:
+      type: object
+      properties:
+        id: { type: integer }
+        key: { type: string }
+        kind: { type: string }
+        target: { type: integer }
+        label: { type: string }
+        owner: { type: [object, 'null'], additionalProperties: true }
+        snapshot: { type: string }
+        reason: { type: string }
+        details: { type: string }
+        by: { type: [object, 'null'], additionalProperties: true }
+        trusted: { type: boolean }
+        at: { type: string, format: date-time }
+        status: { type: string }
+        handledBy: { type: [object, 'null'], additionalProperties: true }
+        handledAt: { type: [string, 'null'] }
+        note: { type: string }
+    PenalizedUser:
+      type: object
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        avatar: { type: integer }
+        role: { type: string }
+        ban: { type: [object, 'null'], additionalProperties: true }
+        mute: { type: [object, 'null'], additionalProperties: true }
+    StaffMod:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        owner: { type: [object, 'null'], additionalProperties: true }
+        withheld: { type: [object, 'null'], additionalProperties: true }
+    StaffSiteSettings:
+      allOf:
+        - $ref: '#/components/schemas/SiteInfo'
+        - type: object
+          properties:
+            blockedWords: { type: string }
+    StaffAction:
+      type: object
+      properties:
+        id: { type: integer }
+        by: { type: [object, 'null'], additionalProperties: true }
+        action: { type: string }
+        target: { type: [object, 'null'], additionalProperties: true }
+        reason: { type: string }
+        at: { type: string, format: date-time }
     SiteInfo:
       type: object
       properties:
@@ -407,6 +838,30 @@ components:
         id: { type: integer }
         username: { type: string }
         avatar: { type: integer }
+    UserCard:
+      type: object
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        displayName: { type: string }
+        avatar: { type: integer }
+        role: { type: string }
+        online: { type: boolean }
+    UserCardDetail:
+      allOf:
+        - $ref: '#/components/schemas/UserCard'
+        - type: object
+          properties:
+            counts: { type: object, additionalProperties: { type: integer } }
+    ChatMessage:
+      type: object
+      properties:
+        id: { type: integer }
+        poster: { type: integer }
+        contents: { type: string }
+        timestamp: { type: string, format: date-time }
+        tagged: { type: [object, 'null'], additionalProperties: true }
+        replyTo: { type: [object, 'null'], additionalProperties: true }
     User:
       allOf:
         - $ref: '#/components/schemas/UserSummary'
