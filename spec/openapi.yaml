@@ -1,20 +1,28 @@
 openapi: 3.1.0
 info:
   title: Funkin' Backstage API
-  version: '2026-11-04'
+  version: '2026-11-05'
   description: >-
-    Unofficial reference based on a browser capture from 2026-11-04. Routes and
-    response shapes may change.
+    Unofficial reference based on browser captures from 2026-11-03 through
+    2026-11-05. Routes and response shapes may change.
 servers:
   - url: https://api.funkinbackstage.net
     description: Funkin' Backstage API
 tags:
   - name: Site
+    description: Public site configuration and information.
   - name: Mods
+    description: Mod listings, details, media, comments, and votes.
+  - name: Mod management
+    description: Create, edit, publish, and upload mod content.
   - name: Users
+    description: User profiles, search, and relationships.
   - name: Teams
+    description: Team details and media.
   - name: Session
+    description: Sign-in, account settings, and data for the current user.
   - name: Chat
+    description: Recent chat messages.
   - name: Staff
     description: Staff routes were captured in a signed-in session. Role requirements were not verified.
 paths:
@@ -192,6 +200,27 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ModSummary'
+    post:
+      tags: [Mod management]
+      summary: Create a mod draft
+      operationId: createMod
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModInput'
+      responses:
+        '201':
+          description: Created mod identifier.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
   /mods/{modId}:
     parameters:
       - $ref: '#/components/parameters/ModId'
@@ -206,6 +235,41 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Mod'
+    patch:
+      tags: [Mod management]
+      summary: Update a mod
+      operationId: updateMod
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModUpdate'
+      responses:
+        '200':
+          description: Updated mod details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mod'
+  /mods/{modId}/edit:
+    parameters:
+      - $ref: '#/components/parameters/ModId'
+    get:
+      tags: [Mod management]
+      summary: Get mod editing data
+      operationId: getModEditData
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Editable fields and existing media and file metadata.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModEdit'
   /mods/{modId}/card:
     parameters:
       - $ref: '#/components/parameters/ModId'
@@ -222,6 +286,24 @@ paths:
               schema: { type: string, format: binary }
             image/webp:
               schema: { type: string, format: binary }
+    put:
+      tags: [Mod management]
+      summary: Upload a mod card image
+      operationId: uploadModCard
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          image/webp:
+            schema: { type: string, format: binary }
+      responses:
+        '200':
+          description: Upload result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResult'
   /mods/{modId}/thumbnail:
     parameters:
       - $ref: '#/components/parameters/ModId'
@@ -238,6 +320,24 @@ paths:
               schema: { type: string, format: binary }
             image/webp:
               schema: { type: string, format: binary }
+    put:
+      tags: [Mod management]
+      summary: Upload a mod thumbnail
+      operationId: uploadModThumbnail
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          image/webp:
+            schema: { type: string, format: binary }
+      responses:
+        '200':
+          description: Upload result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResult'
   /mods/{modId}/icon:
     parameters:
       - $ref: '#/components/parameters/ModId'
@@ -252,6 +352,24 @@ paths:
               schema: { type: string, format: binary }
             image/webp:
               schema: { type: string, format: binary }
+    put:
+      tags: [Mod management]
+      summary: Upload a mod icon
+      operationId: uploadModIcon
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          image/webp:
+            schema: { type: string, format: binary }
+      responses:
+        '200':
+          description: Upload result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResult'
   /mods/{modId}/screenshots/{index}:
     parameters:
       - $ref: '#/components/parameters/ModId'
@@ -273,6 +391,123 @@ paths:
               schema: { type: string, format: binary }
             image/webp:
               schema: { type: string, format: binary }
+    put:
+      tags: [Mod management]
+      summary: Upload a mod screenshot
+      operationId: uploadModScreenshot
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          image/webp:
+            schema: { type: string, format: binary }
+      responses:
+        '200':
+          description: Upload result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResult'
+  /mods/{modId}/file-link:
+    parameters:
+      - $ref: '#/components/parameters/ModId'
+    post:
+      tags: [Mod management]
+      summary: Start a mod file upload
+      operationId: startModFileUpload
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, size]
+              properties:
+                name: { type: string }
+                size: { type: integer }
+      responses:
+        '200':
+          description: Upload URL data and the accepted part size.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModFileUpload'
+  /mods/{modId}/file-part/{partNumber}:
+    parameters:
+      - $ref: '#/components/parameters/ModId'
+      - name: partNumber
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1 }
+    put:
+      tags: [Mod management]
+      summary: Upload a mod file part
+      description: The HAR did not record the request body metadata; the request is modeled as a raw binary part.
+      operationId: uploadModFilePart
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: { type: string, format: binary }
+      responses:
+        '200':
+          description: Uploaded part number and entity tag.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  partNumber: { type: integer }
+                  etag: { type: string }
+  /mods/{modId}/file-done:
+    parameters:
+      - $ref: '#/components/parameters/ModId'
+    post:
+      tags: [Mod management]
+      summary: Finish a mod file upload
+      operationId: completeModFileUpload
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [parts]
+              properties:
+                parts:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/UploadedFilePart'
+      responses:
+        '200':
+          description: Upload completion status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResult'
+  /mods/{modId}/publish:
+    parameters:
+      - $ref: '#/components/parameters/ModId'
+    post:
+      tags: [Mod management]
+      summary: Publish a mod
+      operationId: publishMod
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Published mod details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mod'
   /mods/{modId}/comments:
     parameters:
       - $ref: '#/components/parameters/ModId'
@@ -289,6 +524,28 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Comment'
+    post:
+      tags: [Mods]
+      summary: Add a comment to a mod
+      operationId: createModComment
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [contents]
+              properties:
+                contents: { type: string }
+      responses:
+        '201':
+          description: Created comment.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
   /mods/{modId}/votes:
     parameters:
       - $ref: '#/components/parameters/ModId'
@@ -367,6 +624,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
+  /users:
+    get:
+      tags: [Users]
+      summary: Search users
+      operationId: searchUsers
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: Matching user records.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserSearchResult'
   /users/{userId}/avatar:
     parameters:
       - $ref: '#/components/parameters/UserId'
@@ -409,6 +685,22 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Post'
+  /users/{userId}/teams:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Users]
+      summary: List a user's teams
+      operationId: listUserTeams
+      responses:
+        '200':
+          description: Teams the user belongs to.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TeamSummary'
   /users/{userId}/card:
     parameters:
       - $ref: '#/components/parameters/UserId'
@@ -471,6 +763,56 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/UserCard'
+  /users/{userId}/follow:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    post:
+      tags: [Users]
+      summary: Follow or unfollow a user
+      operationId: setUserFollow
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [on]
+              properties:
+                on: { type: boolean }
+      responses:
+        '200':
+          description: Updated user profile and relationship state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /users/{userId}/friend:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    post:
+      tags: [Users]
+      summary: Update a friendship request
+      operationId: updateUserFriendship
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action: { type: string }
+      responses:
+        '200':
+          description: Updated user profile and relationship state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
   /users/cards:
     get:
       tags: [Users]
@@ -862,6 +1204,77 @@ components:
         updated: { type: string }
         credits: { type: array, items: { type: object, additionalProperties: true } }
         wip: { oneOf: [{ $ref: '#/components/schemas/Wip' }, { type: 'null' }] }
+    ModInput:
+      type: object
+      properties:
+        title: { type: string }
+        tagline: { type: string }
+        description: { type: string }
+        engine: { type: string }
+        category: { type: string }
+        links: { type: array, items: {} }
+        fileDescription: { type: string }
+        file2Description: { type: string }
+        file3Description: { type: string }
+        file4Description: { type: string }
+        file5Description: { type: string }
+        version: { type: string }
+        videos: { type: array, items: {} }
+        createdByMe: { type: boolean }
+        creator: { type: string }
+        isPort: { type: boolean }
+        originalMod: { type: string }
+        contributors:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              roles: { type: array, items: { type: string } }
+        team: { type: integer }
+        miscFiles: { type: array, items: {} }
+        socials: { type: array, items: {} }
+        wip: { type: boolean }
+        stage: { type: string }
+        progress: { type: integer }
+        todos: { type: array, items: {} }
+    ModUpdate:
+      allOf:
+        - $ref: '#/components/schemas/ModInput'
+        - type: object
+          properties:
+            keep: { type: object, additionalProperties: true }
+            adding: { type: object, additionalProperties: true }
+    ModEdit:
+      type: object
+      properties:
+        fields: { $ref: '#/components/schemas/ModInput' }
+        thumbnail: { type: string }
+        icon: { type: string }
+        screenshots: { type: array, items: { type: string } }
+        files:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              size: { type: integer }
+        published: { type: boolean }
+    ModFileUpload:
+      type: object
+      properties:
+        url: { type: [string, 'null'] }
+        partSize: { type: integer }
+        urls: { type: array, items: { type: string } }
+    UploadedFilePart:
+      type: object
+      properties:
+        partNumber: { type: integer }
+        etag: { type: string }
+    UploadResult:
+      type: object
+      properties:
+        ok: { type: boolean }
     Mod:
       allOf:
         - $ref: '#/components/schemas/ModSummary'
@@ -903,6 +1316,13 @@ components:
         - type: object
           properties:
             counts: { type: object, additionalProperties: { type: integer } }
+    UserSearchResult:
+      type: object
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        role: { type: string }
+        avatar: { type: integer }
     ChatMessage:
       type: object
       properties:
