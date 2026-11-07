@@ -1,10 +1,10 @@
 openapi: 3.1.0
 info:
   title: Funkin' Backstage API
-  version: '2026-11-05'
+  version: '2026-11-07'
   description: >-
     Unofficial reference based on browser captures from 2026-11-03 through
-    2026-11-05. Routes and response shapes may change.
+    2026-11-07. Routes and response shapes may change.
 servers:
   - url: https://api.funkinbackstage.net
     description: Funkin' Backstage API
@@ -87,6 +87,155 @@ paths:
                 properties:
                   user:
                     $ref: '#/components/schemas/LoginUser'
+  /auth/signup:
+    post:
+      tags: [Session]
+      summary: Create an account
+      operationId: signup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, email, password]
+              properties:
+                username: { type: string }
+                email: { type: string, format: email }
+                password: { type: string, format: password, writeOnly: true }
+                invite: { type: string }
+      responses:
+        '202':
+          description: Account verification is pending.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  next: { type: string }
+                  ticket: { type: string }
+  /auth/verify:
+    post:
+      tags: [Session]
+      summary: Verify an account
+      operationId: verifyAccount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [identifier, code, ticket]
+              properties:
+                identifier: { type: string }
+                code: { type: string }
+                ticket: { type: string, writeOnly: true }
+      responses:
+        '200':
+          description: Verified user. The response sets the `fb_session` cookie.
+          headers:
+            Set-Cookie:
+              description: Session cookie.
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/LoginUser' }
+  /auth/resend:
+    post:
+      tags: [Session]
+      summary: Resend account verification
+      operationId: resendVerification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [identifier, ticket]
+              properties:
+                identifier: { type: string }
+                ticket: { type: string, writeOnly: true }
+      responses:
+        '202':
+          description: Verification message requested.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  next: { type: string }
+  /auth/forgot:
+    post:
+      tags: [Session]
+      summary: Start password recovery
+      operationId: forgotPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [identifier]
+              properties:
+                identifier: { type: string }
+      responses:
+        '200':
+          description: Password recovery ticket.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ticket: { type: string }
+  /auth/reset:
+    post:
+      tags: [Session]
+      summary: Reset a password
+      operationId: resetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [identifier, code, ticket, password]
+              properties:
+                identifier: { type: string }
+                code: { type: string }
+                ticket: { type: string, writeOnly: true }
+                password: { type: string, format: password, writeOnly: true }
+      responses:
+        '200':
+          description: Updated user. The response sets the `fb_session` cookie.
+          headers:
+            Set-Cookie:
+              description: Session cookie.
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/LoginUser' }
+  /auth/logout:
+    post:
+      tags: [Session]
+      summary: Sign out
+      operationId: logout
+      responses:
+        '200':
+          description: Session cookie cleared.
+          headers:
+            Set-Cookie:
+              description: Clears the session cookie.
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                type: object
   /notifications:
     get:
       tags: [Session]
@@ -186,6 +335,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Settings'
+  /settings/delete:
+    post:
+      tags: [Session]
+      summary: Delete the current account
+      operationId: deleteAccount
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                password: { type: string, format: password, writeOnly: true }
+      responses:
+        '200':
+          description: Account deleted. The response clears the `fb_session` cookie.
+          headers:
+            Set-Cookie:
+              description: Clears the session cookie.
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+        '401':
+          description: The session or password was not accepted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
   /mods:
     get:
       tags: [Mods]
