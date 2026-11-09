@@ -3,7 +3,7 @@ info:
   title: Funkin' Backstage Chat WebSocket
   version: '2026-11-09'
   description: >-
-    The frontend uses this WebSocket for chat messages this one hasnt been documented fully lol
+    Use `send` for text or stickers. Sent messages return as `message` events.
 servers:
   backstage:
     host: api.funkinbackstage.net
@@ -14,7 +14,7 @@ channels:
     address: /chat/ws
     title: Chat WebSocket
     description: >-
-      Send chat actions and receive here. 
+      For a sticker, put its name between colons, like `:TwentyOne:`.
     messages:
       clientFrame:
         name: ClientFrame
@@ -25,7 +25,10 @@ channels:
               required: [type, contents]
               properties:
                 type: { const: send }
-                contents: { type: string }
+                contents:
+                  type: string
+                  description: Send text or a sticker name between colons, such as `:TwentyOne:`.
+                  examples: ["hi", ":TwentyOne:"]
                 replyTo: { oneOf: [{ type: integer }, { type: 'null' }] }
             - type: object
               required: [type, id, contents]
