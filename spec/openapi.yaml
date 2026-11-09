@@ -1,10 +1,10 @@
 openapi: 3.1.0
 info:
   title: Funkin' Backstage API
-  version: '2026-11-07'
+  version: '2026-11-09'
   description: >-
-    Unofficial reference based on browser captures from 2026-11-03 through
-    2026-11-07. Routes and response shapes may change.
+    References from 2026-11-09. Some signed-in and staff responses still need checking.
+    Routes and responses may change.
 servers:
   - url: https://api.funkinbackstage.net
     description: Funkin' Backstage API
@@ -32,8 +32,8 @@ paths:
       summary: Get site configuration and public information
       operationId: getSite
       responses:
-        default:
-          description: Site configuration. The HAR did not record an HTTP status for this response.
+        '200':
+          description: Public site configuration, including artwork indexes.
           content:
             application/json:
               schema:
@@ -42,10 +42,8 @@ paths:
     get:
       tags: [Session]
       summary: Get the current session user
-      description: The capture included this request in a signed-in session. Anonymous behavior was not captured.
+      description: Returns user null when the request has no valid session.
       operationId: getCurrentUser
-      security:
-        - sessionCookie: []
       responses:
         '200':
           description: Current session information.
@@ -259,6 +257,8 @@ paths:
                       additionalProperties: true
                   unread:
                     type: integer
+        '401':
+          $ref: '#/components/responses/SessionRequired'
   /notifications/read:
     post:
       tags: [Session]
@@ -285,10 +285,8 @@ paths:
     get:
       tags: [Chat]
       summary: Get recent chat messages
-      description: The capture included this request in a signed-in session.
+      description: An anonymous request returned recent chat messages on 2026-11-09.
       operationId: getChatMessages
-      security:
-        - sessionCookie: []
       responses:
         '200':
           description: Chat messages.
@@ -312,6 +310,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Settings'
+        '401':
+          $ref: '#/components/responses/SessionRequired'
     patch:
       tags: [Session]
       summary: Update account settings
@@ -377,15 +377,55 @@ paths:
       tags: [Mods]
       summary: List mods
       operationId: listMods
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema: { type: string }
+        - name: sort
+          in: query
+          required: false
+          schema: { type: string }
+        - name: engine
+          in: query
+          required: false
+          schema: { type: string }
+        - name: category
+          in: query
+          required: false
+          schema: { type: string }
+        - name: featured
+          in: query
+          required: false
+          schema: { type: boolean }
+        - name: page
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1 }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1 }
+        - name: ids
+          in: query
+          required: false
+          description: Comma-separated mod identifiers.
+          schema: { type: string }
+        - name: related
+          in: query
+          required: false
+          schema: { type: string }
+        - name: pick
+          in: query
+          required: false
+          schema: { type: boolean }
       responses:
         '200':
-          description: List of mods.
+          description: Paginated mod search result.
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ModSummary'
+                $ref: '#/components/schemas/ModListResponse'
     post:
       tags: [Mod management]
       summary: Create a mod draft
@@ -456,6 +496,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ModEdit'
+        '401':
+          $ref: '#/components/responses/SessionRequired'
   /mods/{modId}/card:
     parameters:
       - $ref: '#/components/parameters/ModId'
@@ -631,7 +673,7 @@ paths:
     put:
       tags: [Mod management]
       summary: Upload a mod file part
-      description: The HAR did not record the request body metadata; the request is modeled as a raw binary part.
+      description: The HAR has no request-body details, so this uses a raw binary part.
       operationId: uploadModFilePart
       security:
         - sessionCookie: []
@@ -841,6 +883,8 @@ paths:
           content:
             image/jpeg:
               schema: { type: string, format: binary }
+            image/png:
+              schema: { type: string, format: binary }
             image/webp:
               schema: { type: string, format: binary }
   /users/{userId}/banner:
@@ -853,6 +897,10 @@ paths:
       responses:
         '200':
           content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+            image/png:
+              schema: { type: string, format: binary }
             image/webp:
               schema: { type: string, format: binary }
   /users/{userId}/posts:
@@ -1045,6 +1093,8 @@ paths:
                   sent:
                     type: array
                     items: { type: object, additionalProperties: true }
+        '401':
+          $ref: '#/components/responses/SessionRequired'
   /users/me/blocks:
     get:
       tags: [Session]
@@ -1061,6 +1111,8 @@ paths:
               schema:
                 type: array
                 items: { type: object, additionalProperties: true }
+        '401':
+          $ref: '#/components/responses/SessionRequired'
   /staff/overview:
     get:
       tags: [Staff]
@@ -1075,6 +1127,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StaffOverview'
+        '401':
+          $ref: '#/components/responses/SessionRequired'
   /staff/reports:
     get:
       tags: [Staff]
@@ -1096,6 +1150,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/StaffReport'
+        '401':
+          $ref: '#/components/responses/SessionRequired'
   /staff/users:
     get:
       tags: [Staff]
@@ -1117,6 +1173,8 @@ paths:
               schema:
                 type: array
                 items: { type: object, additionalProperties: true }
+        '401':
+          $ref: '#/components/responses/SessionRequired'
   /staff/penalized:
     get:
       tags: [Staff]
@@ -1133,6 +1191,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/PenalizedUser'
+        '401':
+          $ref: '#/components/responses/SessionRequired'
   /staff/mods:
     get:
       tags: [Staff]
@@ -1149,6 +1209,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/StaffMod'
+        '401':
+          $ref: '#/components/responses/SessionRequired'
   /staff/site:
     get:
       tags: [Staff]
@@ -1163,6 +1225,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StaffSiteSettings'
+        '401':
+          $ref: '#/components/responses/SessionRequired'
+    patch:
+      tags: [Staff]
+      summary: Update staff site settings
+      operationId: updateStaffSiteSettings
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StaffSiteSettings' }
+      responses:
+        default:
+          description: Updated site settings; exact response status and body were not captured.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StaffSiteSettings' }
   /staff/log:
     get:
       tags: [Staff]
@@ -1179,6 +1260,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/StaffAction'
+        '401':
+          $ref: '#/components/responses/SessionRequired'
   /teams/{teamId}:
     parameters:
       - $ref: '#/components/parameters/TeamId'
@@ -1193,6 +1276,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Team'
+    patch:
+      tags: [Teams]
+      summary: Update a team
+      operationId: updateTeam
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TeamInput' }
+      responses:
+        default:
+          description: Updated team; exact status and response were not captured.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Team' }
+    delete:
+      tags: [Teams]
+      summary: Delete a team
+      operationId: deleteTeam
+      security:
+        - sessionCookie: []
+      responses:
+        default:
+          description: Deletion result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
   /teams/{teamId}/icon:
     parameters:
       - $ref: '#/components/parameters/TeamId'
@@ -1209,6 +1321,36 @@ paths:
               schema: { type: string, format: binary }
             image/webp:
               schema: { type: string, format: binary }
+    put:
+      tags: [Teams]
+      summary: Upload a team's icon
+      operationId: uploadTeamIcon
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          image/png: { schema: { type: string, format: binary } }
+          image/jpeg: { schema: { type: string, format: binary } }
+          image/webp: { schema: { type: string, format: binary } }
+      responses:
+        default:
+          description: Upload result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+    delete:
+      tags: [Teams]
+      summary: Remove a team's icon
+      operationId: deleteTeamIcon
+      security:
+        - sessionCookie: []
+      responses:
+        default:
+          description: Deletion result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
   /teams/{teamId}/logo:
     parameters:
       - $ref: '#/components/parameters/TeamId'
@@ -1219,8 +1361,42 @@ paths:
       responses:
         '200':
           content:
+            image/jpeg:
+              schema: { type: string, format: binary }
             image/png:
               schema: { type: string, format: binary }
+            image/webp:
+              schema: { type: string, format: binary }
+    put:
+      tags: [Teams]
+      summary: Upload a team's logo
+      operationId: uploadTeamLogo
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          image/png: { schema: { type: string, format: binary } }
+          image/jpeg: { schema: { type: string, format: binary } }
+          image/webp: { schema: { type: string, format: binary } }
+      responses:
+        default:
+          description: Upload result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+    delete:
+      tags: [Teams]
+      summary: Remove a team's logo
+      operationId: deleteTeamLogo
+      security:
+        - sessionCookie: []
+      responses:
+        default:
+          description: Deletion result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
   /teams/{teamId}/banner:
     parameters:
       - $ref: '#/components/parameters/TeamId'
@@ -1231,9 +1407,1210 @@ paths:
       responses:
         '200':
           content:
+            image/jpeg:
+              schema: { type: string, format: binary }
             image/png:
               schema: { type: string, format: binary }
+            image/webp:
+              schema: { type: string, format: binary }
+    put:
+      tags: [Teams]
+      summary: Upload a team's banner
+      operationId: uploadTeamBanner
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          image/png: { schema: { type: string, format: binary } }
+          image/jpeg: { schema: { type: string, format: binary } }
+          image/webp: { schema: { type: string, format: binary } }
+      responses:
+        default:
+          description: Upload result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+    delete:
+      tags: [Teams]
+      summary: Remove a team's banner
+      operationId: deleteTeamBanner
+      security:
+        - sessionCookie: []
+      responses:
+        default:
+          description: Deletion result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /chat/send:
+    post:
+      tags: [Chat]
+      summary: Send a chat message
+      description: The frontend sends `contents` and may include a reply target. The success response wasn't captured.
+      operationId: sendChatMessage
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [contents]
+              properties:
+                contents: { type: string }
+                replyTo: { oneOf: [{ type: integer }, { type: 'null' }] }
+      responses:
+        default:
+          description: The REST fallback returns a chat message; exact HTTP status was not captured.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ChatMessage' }
+  /settings/background:
+    put:
+      tags: [Session]
+      summary: Upload the account background
+      operationId: uploadAccountBackground
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          image/webp:
+            schema: { type: string, format: binary }
+          image/png:
+            schema: { type: string, format: binary }
+          image/jpeg:
+            schema: { type: string, format: binary }
+      responses:
+        default:
+          description: Upload result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /settings/username:
+    post:
+      tags: [Session]
+      summary: Change the account username
+      operationId: changeUsername
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string }
+                password: { type: string, format: password, writeOnly: true }
+      responses:
+        default:
+          description: Username change result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /settings/password:
+    post:
+      tags: [Session]
+      summary: Change the account password
+      operationId: changePassword
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current, password]
+              properties:
+                current: { type: string, format: password, writeOnly: true }
+                password: { type: string, format: password, writeOnly: true }
+      responses:
+        default:
+          description: Password change result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /settings/email:
+    post:
+      tags: [Session]
+      summary: Change the account email
+      operationId: changeEmail
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, format: password, writeOnly: true }
+      responses:
+        default:
+          description: Email change result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /settings/email/verify:
+    post:
+      tags: [Session]
+      summary: Verify a changed email address
+      operationId: verifyChangedEmail
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string }
+      responses:
+        default:
+          description: Verification result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /users/me:
+    patch:
+      tags: [Session]
+      summary: Update the current user's profile
+      description: The frontend uses this route to edit profile fields. Accepted fields depend on which one you edit.
+      operationId: updateCurrentUser
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        default:
+          description: Updated user; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /users/me/preset:
+    put:
+      tags: [Session]
+      summary: Select a profile preset
+      operationId: setProfilePreset
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [index]
+              properties:
+                index: { type: integer }
+      responses:
+        default:
+          description: Preset update result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /users/me/avatar:
+    put:
+      tags: [Session]
+      summary: Upload the current user's avatar
+      operationId: uploadCurrentUserAvatar
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          image/png: { schema: { type: string, format: binary } }
+          image/jpeg: { schema: { type: string, format: binary } }
+          image/webp: { schema: { type: string, format: binary } }
+      responses:
+        default:
+          description: Upload result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /users/me/banner:
+    put:
+      tags: [Session]
+      summary: Upload the current user's banner
+      operationId: uploadCurrentUserBanner
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          image/png: { schema: { type: string, format: binary } }
+          image/jpeg: { schema: { type: string, format: binary } }
+          image/webp: { schema: { type: string, format: binary } }
+      responses:
+        default:
+          description: Upload result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+    delete:
+      tags: [Session]
+      summary: Remove the current user's banner
+      operationId: deleteCurrentUserBanner
+      security:
+        - sessionCookie: []
+      responses:
+        default:
+          description: Deletion result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /users/{userId}/background:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Users]
+      summary: Get a user's background image
+      operationId: getUserBackground
+      responses:
+        default:
+          description: Background image or not-found response.
+          content:
+            image/jpeg: { schema: { type: string, format: binary } }
+            image/png: { schema: { type: string, format: binary } }
+            image/webp: { schema: { type: string, format: binary } }
+  /users/{userId}/block:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    post:
+      tags: [Session]
+      summary: Block or unblock a user
+      operationId: setUserBlock
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [on]
+              properties:
+                on: { type: boolean }
+      responses:
+        default:
+          description: Relationship update result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /posts:
+    post:
+      tags: [Users]
+      summary: Create a blog post
+      operationId: createPost
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, body]
+              properties:
+                title: { type: string, maxLength: 80 }
+                body: { type: string }
+      responses:
+        default:
+          description: Created post; exact status and response fields were not captured.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Post' }
+  /posts/{postId}:
+    parameters:
+      - name: postId
+        in: path
+        required: true
+        schema: { type: integer }
+    patch:
+      tags: [Users]
+      summary: Edit a blog post
+      operationId: updatePost
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                body: { type: string }
+      responses:
+        default:
+          description: Updated post; exact response fields were not captured.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Post' }
+    delete:
+      tags: [Users]
+      summary: Delete a blog post
+      operationId: deletePost
+      security:
+        - sessionCookie: []
+      responses:
+        default:
+          description: Deletion result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /posts/{postId}/like:
+    parameters:
+      - name: postId
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      tags: [Users]
+      summary: Like or unlike a blog post
+      operationId: setPostLike
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [on]
+              properties:
+                on: { type: boolean }
+      responses:
+        default:
+          description: Updated post; exact response fields were not captured.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Post' }
+  /posts/{postId}/replies:
+    parameters:
+      - name: postId
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Users]
+      summary: List replies to a blog post
+      operationId: listPostReplies
+      responses:
+        default:
+          description: Reply list; exact response shape was not captured.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Comment' } }
+    post:
+      tags: [Users]
+      summary: Reply to a blog post
+      operationId: createPostReply
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [contents]
+              properties:
+                contents: { type: string }
+      responses:
+        default:
+          description: Created reply; exact response fields were not captured.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Comment' }
+  /posts/{postId}/replies/{replyId}:
+    parameters:
+      - name: postId
+        in: path
+        required: true
+        schema: { type: integer }
+      - name: replyId
+        in: path
+        required: true
+        schema: { type: integer }
+    delete:
+      tags: [Users]
+      summary: Delete a blog post reply
+      operationId: deletePostReply
+      security:
+        - sessionCookie: []
+      responses:
+        default:
+          description: Deletion result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /posts/images:
+    put:
+      tags: [Users]
+      summary: Upload an image for a blog post
+      operationId: uploadPostImage
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          image/png: { schema: { type: string, format: binary } }
+          image/jpeg: { schema: { type: string, format: binary } }
+          image/webp: { schema: { type: string, format: binary } }
+      responses:
+        default:
+          description: Upload URL data; observed response includes a url field.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url: { type: string }
+  /posts/videos:
+    post:
+      tags: [Users]
+      summary: Start a blog video upload
+      operationId: startPostVideoUpload
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, size]
+              properties:
+                type: { type: string, enum: [video/mp4, video/webm] }
+                size: { type: integer, maximum: 52428800 }
+      responses:
+        default:
+          description: Upload identifier; observed response includes an id field.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+  /posts/videos/{uploadId}:
+    parameters:
+      - name: uploadId
+        in: path
+        required: true
+        schema: { type: string }
+    put:
+      tags: [Users]
+      summary: Upload a blog video
+      operationId: uploadPostVideo
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          video/mp4: { schema: { type: string, format: binary } }
+          video/webm: { schema: { type: string, format: binary } }
+      responses:
+        default:
+          description: Storage upload result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /mods/{modId}/click:
+    parameters:
+      - $ref: '#/components/parameters/ModId'
+    post:
+      tags: [Mods]
+      summary: Record a mod page click
+      operationId: recordModClick
+      responses:
+        default:
+          description: Click tracking result; response body was not captured.
+  /mods/{modId}/updates:
+    parameters:
+      - $ref: '#/components/parameters/ModId'
+    post:
+      tags: [Mod management]
+      summary: Add a mod update
+      operationId: createModUpdate
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, entries]
+              properties:
+                title: { type: string }
+                entries:
+                  type: array
+                  items:
+                    type: object
+                    required: [type, text]
+                    properties:
+                      type: { type: string }
+                      text: { type: string }
+      responses:
+        default:
+          description: Updated mod response; exact status and body were not captured.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Mod' }
+  /mods/{modId}/updates/{updateId}:
+    parameters:
+      - $ref: '#/components/parameters/ModId'
+      - name: updateId
+        in: path
+        required: true
+        schema: { type: integer }
+    patch:
+      tags: [Mod management]
+      summary: Edit a mod update
+      operationId: updateModUpdate
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                entries: { type: array, items: { type: object, additionalProperties: true } }
+      responses:
+        default:
+          description: Updated mod response; exact status and body were not captured.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Mod' }
+    delete:
+      tags: [Mod management]
+      summary: Delete a mod update
+      operationId: deleteModUpdate
+      security:
+        - sessionCookie: []
+      responses:
+        default:
+          description: Deletion result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /teams:
+    get:
+      tags: [Teams]
+      summary: Search teams
+      operationId: searchTeams
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: Matching teams.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/TeamSummary' }
+    post:
+      tags: [Teams]
+      summary: Create a team
+      operationId: createTeam
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, tagline, description, links, joinMode]
+              properties:
+                name: { type: string, maxLength: 30 }
+                tagline: { type: string, maxLength: 80 }
+                description: { type: string, maxLength: 2000 }
+                links: { type: array, items: { type: string, format: uri } }
+                joinMode: { type: string }
+      responses:
+        default:
+          description: Created team; exact status and response were not captured.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Team' }
+  /teams/{teamId}/followers:
+    parameters:
+      - $ref: '#/components/parameters/TeamId'
+    get:
+      tags: [Teams]
+      summary: List a team's followers
+      operationId: listTeamFollowers
+      responses:
+        '200':
+          description: Follower user cards, checked against a public team on 2026-11-09.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/UserCard' } }
+  /teams/{teamId}/follow:
+    parameters:
+      - $ref: '#/components/parameters/TeamId'
+    post:
+      tags: [Teams]
+      summary: Follow or unfollow a team
+      operationId: setTeamFollow
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [on]
+              properties:
+                on: { type: boolean }
+      responses:
+        default:
+          description: Relationship update result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /teams/{teamId}/request:
+    parameters:
+      - $ref: '#/components/parameters/TeamId'
+    post:
+      tags: [Teams]
+      summary: Request to join or cancel a team request
+      operationId: setTeamJoinRequest
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [on]
+              properties:
+                on: { type: boolean }
+      responses:
+        default:
+          description: Request update result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /teams/{teamId}/requests/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/TeamId'
+      - $ref: '#/components/parameters/UserId'
+    post:
+      tags: [Teams]
+      summary: Accept or reject a team join request
+      operationId: reviewTeamRequest
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accept]
+              properties:
+                accept: { type: boolean }
+      responses:
+        default:
+          description: Request review result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /teams/{teamId}/members/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/TeamId'
+      - $ref: '#/components/parameters/UserId'
+    patch:
+      tags: [Teams]
+      summary: Update a team member's roles or position
+      operationId: updateTeamMember
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                roles: { type: array, items: { type: string } }
+                move: { type: integer }
+      responses:
+        default:
+          description: Updated member or team; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+    delete:
+      tags: [Teams]
+      summary: Remove or leave a team
+      operationId: removeTeamMember
+      security:
+        - sessionCookie: []
+      responses:
+        default:
+          description: Membership result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /teams/{teamId}/invites:
+    parameters:
+      - $ref: '#/components/parameters/TeamId'
+    post:
+      tags: [Teams]
+      summary: Invite a user to a team
+      operationId: inviteTeamMember
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username]
+              properties:
+                username: { type: string }
+      responses:
+        default:
+          description: Invitation result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /teams/{teamId}/invites/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/TeamId'
+      - $ref: '#/components/parameters/UserId'
+    delete:
+      tags: [Teams]
+      summary: Cancel a team invitation
+      operationId: cancelTeamInvitation
+      security:
+        - sessionCookie: []
+      responses:
+        default:
+          description: Invitation deletion result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /teams/{teamId}/invite:
+    parameters:
+      - $ref: '#/components/parameters/TeamId'
+    post:
+      tags: [Teams]
+      summary: Accept or reject a team invitation
+      operationId: respondToTeamInvitation
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accept]
+              properties:
+                accept: { type: boolean }
+      responses:
+        default:
+          description: Invitation response; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /staff/chat:
+    delete:
+      tags: [Staff]
+      summary: Clear chat history
+      operationId: clearStaffChat
+      security:
+        - sessionCookie: []
+      responses:
+        default:
+          description: Deletion result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /staff/chat/{messageId}:
+    parameters:
+      - name: messageId
+        in: path
+        required: true
+        schema: { type: integer }
+    delete:
+      tags: [Staff]
+      summary: Delete a chat message
+      operationId: deleteStaffChatMessage
+      security:
+        - sessionCookie: []
+      responses:
+        default:
+          description: Deletion result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /staff/ips:
+    get:
+      tags: [Staff]
+      summary: List blocked IP addresses
+      operationId: listStaffIpBans
+      security:
+        - sessionCookie: []
+      responses:
+        default:
+          description: IP ban records; response fields were not captured.
+          content:
+            application/json:
+              schema: { type: array, items: { type: object, additionalProperties: true } }
+        '401':
+          $ref: '#/components/responses/SessionRequired'
+    post:
+      tags: [Staff]
+      summary: Ban an IP address
+      operationId: banStaffIp
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ip, reason, days]
+              properties:
+                ip: { type: string }
+                reason: { type: string }
+                days: { oneOf: [{ type: integer }, { type: 'null' }] }
+      responses:
+        default:
+          description: IP ban result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /staff/ips/{ip}:
+    parameters:
+      - name: ip
+        in: path
+        required: true
+        schema: { type: string }
+    delete:
+      tags: [Staff]
+      summary: Remove an IP ban
+      operationId: unbanStaffIp
+      security:
+        - sessionCookie: []
+      responses:
+        default:
+          description: IP unban result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /staff/mods/{modId}:
+    parameters:
+      - $ref: '#/components/parameters/ModId'
+    post:
+      tags: [Staff]
+      summary: Apply a staff action to a mod
+      operationId: actOnStaffMod
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action: { type: string }
+                reason: { type: string }
+      responses:
+        default:
+          description: Staff action result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /staff/teams/{teamId}:
+    parameters:
+      - $ref: '#/components/parameters/TeamId'
+    post:
+      tags: [Staff]
+      summary: Apply a staff action to a team
+      operationId: actOnStaffTeam
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action: { type: string }
+                reason: { type: string }
+      responses:
+        default:
+          description: Staff action result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /staff/users/{userId}/{action}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+      - name: action
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [Staff]
+      summary: Apply a staff action to a user
+      operationId: actOnStaffUser
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        default:
+          description: Staff action result; action-specific fields and response were not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /staff/users/{userId}/badges:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    post:
+      tags: [Staff]
+      summary: Set a user's staff badges
+      operationId: setStaffUserBadges
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [badges]
+              properties:
+                badges: { type: array, items: { type: string } }
+      responses:
+        default:
+          description: Badge update result; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /staff/reports/{reportId}:
+    parameters:
+      - name: reportId
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      tags: [Staff]
+      summary: Update a report's status
+      operationId: updateStaffReport
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status, note]
+              properties:
+                status: { type: string }
+                note: { type: string }
+      responses:
+        default:
+          description: Updated report; exact response was not captured.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StaffReport' }
+  /staff/users/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Staff]
+      summary: Get a staff user record
+      operationId: getStaffUser
+      security:
+        - sessionCookie: []
+      responses:
+        default:
+          description: Staff user details, standing, uploads, and reports; fields were not fully captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /staff/art/categories:
+    post:
+      tags: [Staff]
+      summary: Add a custom art category
+      operationId: createStaffArtCategory
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, maxLength: 24 }
+      responses:
+        default:
+          description: Updated art configuration, including categories.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /staff/art/categories/{categoryKey}:
+    parameters:
+      - name: categoryKey
+        in: path
+        required: true
+        schema: { type: string }
+    delete:
+      tags: [Staff]
+      summary: Remove a custom art category
+      operationId: deleteStaffArtCategory
+      security:
+        - sessionCookie: []
+      responses:
+        default:
+          description: Updated art configuration; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /staff/art/stickers/{stickerName}:
+    parameters:
+      - name: stickerName
+        in: path
+        required: true
+        schema: { type: string }
+    put:
+      tags: [Staff]
+      summary: Upload or replace a chat sticker
+      operationId: uploadStaffSticker
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: group
+          in: query
+          required: true
+          schema: { type: string }
+        - name: w
+          in: query
+          required: true
+          schema: { type: integer }
+        - name: h
+          in: query
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          image/png: { schema: { type: string, format: binary } }
+          image/webp: { schema: { type: string, format: binary } }
+      responses:
+        default:
+          description: Updated art configuration; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+    delete:
+      tags: [Staff]
+      summary: Remove a chat sticker
+      operationId: deleteStaffSticker
+      security:
+        - sessionCookie: []
+      responses:
+        default:
+          description: Updated art configuration; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /staff/art/renders:
+    put:
+      tags: [Staff]
+      summary: Upload a homepage render image
+      operationId: uploadStaffRender
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: width
+          in: query
+          required: true
+          schema: { type: integer }
+        - name: height
+          in: query
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          image/png: { schema: { type: string, format: binary } }
+          image/webp: { schema: { type: string, format: binary } }
+      responses:
+        default:
+          description: Updated art configuration; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /staff/art/renders/{renderId}:
+    parameters:
+      - name: renderId
+        in: path
+        required: true
+        schema: { type: integer }
+    delete:
+      tags: [Staff]
+      summary: Remove a homepage render image
+      operationId: deleteStaffRender
+      security:
+        - sessionCookie: []
+      responses:
+        default:
+          description: Updated art configuration; exact response was not captured.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
 components:
+  responses:
+    SessionRequired:
+      description: The request has no valid signed-in session (observed as HTTP 401).
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message: { type: string }
   securitySchemes:
     sessionCookie:
       type: apiKey
@@ -1352,6 +2729,30 @@ components:
         about: { type: object, additionalProperties: true }
         supporters: { type: array, items: { type: string } }
         inviteOnly: { type: boolean }
+        categories:
+          type: array
+          items:
+            type: object
+            properties:
+              key: { type: string }
+              name: { type: string }
+        stickers:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              group: { type: string }
+              url: { type: string }
+              w: { type: integer }
+              h: { type: integer }
+        renders:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer }
+              url: { type: string }
     SessionUser:
       type: object
       properties:
@@ -1378,7 +2779,6 @@ components:
         card: { type: string }
         team: { oneOf: [{ $ref: '#/components/schemas/TeamSummary' }, { type: 'null' }] }
         submitter: { $ref: '#/components/schemas/UserSummary' }
-        approved: { type: boolean }
         featured: { type: boolean }
         withheld: { type: [string, 'null'] }
         downloads: { type: integer }
@@ -1390,6 +2790,16 @@ components:
         updated: { type: string }
         credits: { type: array, items: { type: object, additionalProperties: true } }
         wip: { oneOf: [{ $ref: '#/components/schemas/Wip' }, { type: 'null' }] }
+    ModListResponse:
+      type: object
+      required: [mods, total, page, pages]
+      properties:
+        mods:
+          type: array
+          items: { $ref: '#/components/schemas/ModSummary' }
+        total: { type: integer }
+        page: { type: integer }
+        pages: { type: integer }
     ModInput:
       type: object
       properties:
@@ -1537,7 +2947,7 @@ components:
             friends: { type: array, items: { $ref: '#/components/schemas/UserSummary' } }
             online: { type: boolean }
             banned: { type: boolean }
-            relation: { type: object, additionalProperties: true }
+            relation: { type: [object, 'null'], additionalProperties: true }
             badges: { type: array, items: { type: object, additionalProperties: true } }
             teams: { type: array, items: { $ref: '#/components/schemas/TeamSummary' } }
     Post:
@@ -1587,8 +2997,45 @@ components:
             joinMode: { type: string }
             owner: { type: integer }
             created: { type: string, format: date-time }
-            members: { type: array, items: { type: object, additionalProperties: true } }
+            members:
+              type: array
+              items:
+                type: object
+                properties:
+                  id: { type: integer }
+                  username: { type: string }
+                  avatar: { type: integer }
+                  roles: { type: array, items: { type: string } }
             followers: { type: integer }
-            relation: { type: object, additionalProperties: true }
-            requests: { type: array, items: { type: object, additionalProperties: true } }
-            invites: { type: array, items: { type: object, additionalProperties: true } }
+            relation:
+              type: [object, 'null']
+              properties:
+                owner: { type: boolean }
+                member: { type: boolean }
+                requested: { type: boolean }
+                following: { type: boolean }
+                invited: { type: boolean }
+            requests:
+              type: array
+              items:
+                type: object
+                properties:
+                  id: { type: integer }
+                  username: { type: string }
+                  avatar: { type: integer }
+            invites:
+              type: array
+              items:
+                type: object
+                properties:
+                  id: { type: integer }
+                  username: { type: string }
+                  avatar: { type: integer }
+    TeamInput:
+      type: object
+      properties:
+        name: { type: string, maxLength: 30 }
+        tagline: { type: string, maxLength: 80 }
+        description: { type: string, maxLength: 2000 }
+        links: { type: array, items: { type: string, format: uri } }
+        joinMode: { type: string }

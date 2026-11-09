@@ -1,10 +1,9 @@
 asyncapi: 3.0.0
 info:
   title: Funkin' Backstage Chat WebSocket
-  version: '2026-11-04'
+  version: '2026-11-09'
   description: >-
-    The November 3 capture recorded two successful WebSocket handshakes and
-    no frames.
+    The frontend uses this WebSocket for chat messages this one hasnt been documented fully lol
 servers:
   backstage:
     host: api.funkinbackstage.net
@@ -14,4 +13,109 @@ channels:
   chat:
     address: /chat/ws
     title: Chat WebSocket
-    description: Message directions and payload formats are unknown.
+    description: >-
+      Send chat actions and receive here. 
+    messages:
+      clientFrame:
+        name: ClientFrame
+        title: Client chat action
+        payload:
+          oneOf:
+            - type: object
+              required: [type, contents]
+              properties:
+                type: { const: send }
+                contents: { type: string }
+                replyTo: { oneOf: [{ type: integer }, { type: 'null' }] }
+            - type: object
+              required: [type, id, contents]
+              properties:
+                type: { const: edit }
+                id: { type: integer }
+                contents: { type: string }
+            - type: object
+              required: [type, id]
+              properties:
+                type: { const: delete }
+                id: { type: integer }
+            - type: object
+              required: [type]
+              properties:
+                type: { const: typing }
+      serverFrame:
+        name: ServerFrame
+        title: Server chat event
+        payload:
+          oneOf:
+            - type: object
+              required: [type, data]
+              properties:
+                type: { const: message }
+                data: { $ref: '#/components/schemas/ChatMessage' }
+            - type: object
+              required: [type, data]
+              properties:
+                type: { const: typing }
+                data:
+                  type: object
+                  properties:
+                    id: { type: integer }
+            - type: object
+              required: [type, data]
+              properties:
+                type: { const: edit }
+                data: { $ref: '#/components/schemas/ChatMessage' }
+            - type: object
+              required: [type, data]
+              properties:
+                type: { const: presence }
+                data:
+                  type: object
+                  properties:
+                    ids: { type: array, items: { type: integer } }
+            - type: object
+              required: [type, data]
+              properties:
+                type: { const: user-updated }
+                data: { type: object, additionalProperties: true }
+            - type: object
+              required: [type, data]
+              properties:
+                type: { const: error }
+                data: { type: string }
+            - type: object
+              required: [type, data]
+              properties:
+                type: { const: delete }
+                data:
+                  type: object
+                  properties:
+                    id: { type: integer }
+            - type: object
+              required: [type]
+              properties:
+                type: { const: clear }
+operations:
+  sendChatAction:
+    action: send
+    channel:
+      $ref: '#/channels/chat'
+    messages:
+      - $ref: '#/channels/chat/messages/clientFrame'
+  receiveChatEvent:
+    action: receive
+    channel:
+      $ref: '#/channels/chat'
+    messages:
+      - $ref: '#/channels/chat/messages/serverFrame'
+components:
+  schemas:
+    ChatMessage:
+      type: object
+      properties:
+        id: { type: integer }
+        poster: { type: integer }
+        contents: { type: string }
+        timestamp: { type: string, format: date-time }
+        tagged: { type: [object, 'null'], additionalProperties: true }
+        replyTo: { type: [object, 'null'], additionalProperties: true }

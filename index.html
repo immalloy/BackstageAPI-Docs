@@ -19,7 +19,19 @@
   <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
   <script>
     Scalar.createApiReference("#app", {
-      url: "./spec/openapi.yaml",
+      sources: [
+        {
+          title: "Funkin' Backstage REST API",
+          slug: "rest-api",
+          url: "./spec/openapi.yaml",
+          default: true
+        },
+        {
+          title: "Funkin' Backstage Realtime API",
+          slug: "realtime-api",
+          url: "./spec/asyncapi.yaml"
+        }
+      ],
       layout: "modern",
       theme: "default",
       darkMode: false,
