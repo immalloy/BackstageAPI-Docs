@@ -23,6 +23,8 @@ tags:
     description: Sign-in, account settings, and data for the current user.
   - name: Chat
     description: Recent chat messages.
+  - name: Music
+    description: Static tracks used by the sidebar player.
   - name: Staff
     description: Staff routes were captured in a signed-in session. Role requirements were not verified.
 paths:
@@ -2601,6 +2603,33 @@ paths:
           content:
             application/json:
               schema: { type: object, additionalProperties: true }
+  /music/{trackFile}:
+    servers:
+      - url: https://funkinbackstage.net
+        description: Public site assets
+    get:
+      tags: [Music]
+      summary: Get a sidebar music track
+      description: The sidebar keeps the track list in the frontend and loads these MP3 files directly.
+      operationId: getSidebarMusicTrack
+      parameters:
+        - name: trackFile
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - Mic Check.mp3
+              - Neddy.mp3
+              - Backstage.mp3
+              - Offstage.mp3
+              - Intermission.mp3
+      responses:
+        '200':
+          description: MP3 audio track.
+          content:
+            audio/mpeg:
+              schema: { type: string, format: binary }
 components:
   responses:
     SessionRequired:
