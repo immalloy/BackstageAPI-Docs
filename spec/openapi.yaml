@@ -538,6 +538,7 @@ paths:
       operationId: getModCard
       responses:
         '200':
+          description: Mod card image bytes.
           content:
             image/jpeg:
               schema: { type: string, format: binary }
@@ -572,6 +573,7 @@ paths:
       operationId: getModThumbnail
       responses:
         '200':
+          description: Mod thumbnail image bytes.
           content:
             image/jpeg:
               schema: { type: string, format: binary }
@@ -606,6 +608,7 @@ paths:
       operationId: getModIcon
       responses:
         '200':
+          description: Mod icon image bytes.
           content:
             image/png:
               schema: { type: string, format: binary }
@@ -643,6 +646,7 @@ paths:
       operationId: getModScreenshot
       responses:
         '200':
+          description: Screenshot image bytes.
           content:
             image/jpeg:
               schema: { type: string, format: binary }
@@ -928,6 +932,7 @@ paths:
       operationId: getUserAvatar
       responses:
         '200':
+          description: User avatar image bytes.
           content:
             image/jpeg:
               schema: { type: string, format: binary }
@@ -944,6 +949,7 @@ paths:
       operationId: getUserBanner
       responses:
         '200':
+          description: User banner image bytes.
           content:
             image/jpeg:
               schema: { type: string, format: binary }
@@ -1362,6 +1368,7 @@ paths:
       operationId: getTeamIcon
       responses:
         '200':
+          description: Team icon image bytes.
           content:
             image/jpeg:
               schema: { type: string, format: binary }
@@ -1408,6 +1415,7 @@ paths:
       operationId: getTeamLogo
       responses:
         '200':
+          description: Team logo image bytes.
           content:
             image/jpeg:
               schema: { type: string, format: binary }
@@ -1454,6 +1462,7 @@ paths:
       operationId: getTeamBanner
       responses:
         '200':
+          description: Team banner image bytes.
           content:
             image/jpeg:
               schema: { type: string, format: binary }
