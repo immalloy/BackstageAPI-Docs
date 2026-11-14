@@ -1,9 +1,9 @@
 asyncapi: 3.0.0
 info:
   title: Funkin' Backstage Chat WebSocket
-  version: '2026-11-09'
+  version: '2026-11-14'
   description: >-
-    Use `send` for text or stickers. Sent messages return as `message` events.
+    Use `send` for text or stickers. Sent messages return as `message` events. The event types were checked against the current site bundle on 2026-11-14.
 servers:
   backstage:
     host: api.funkinbackstage.net

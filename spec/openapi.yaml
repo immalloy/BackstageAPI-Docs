@@ -1,10 +1,10 @@
 openapi: 3.1.0
 info:
   title: Funkin' Backstage API
-  version: '2026-11-09'
+  version: '2026-11-14'
   description: >-
-    References from 2026-11-09. Some signed-in and staff responses still need checking.
-    Routes and responses may change.
+    References refreshed 2026-11-14 from live API responses and the current public-site frontend bundle.
+    Some signed-in and staff responses still need checking. Routes and responses may change.
 servers:
   - url: https://api.funkinbackstage.net
     description: Funkin' Backstage API
@@ -253,8 +253,7 @@ paths:
                   items:
                     type: array
                     items:
-                      type: object
-                      additionalProperties: true
+                      $ref: '#/components/schemas/Notification'
                   unread:
                     type: integer
         '401':
@@ -378,26 +377,42 @@ paths:
       summary: List mods
       operationId: listMods
       parameters:
-        - name: search
+        - name: q
           in: query
           required: false
+          description: Search term used by the public mods page.
           schema: { type: string }
         - name: sort
           in: query
           required: false
-          schema: { type: string }
+          description: Sort key used by the public mods page.
+          schema:
+            type: string
+            enum: [activity, downloads, likes, views, added, stars]
+        - name: reverse
+          in: query
+          required: false
+          description: Reverse the selected sort order. The frontend sends `1` when enabled.
+          schema: { type: string, enum: ['1'] }
         - name: engine
           in: query
           required: false
-          schema: { type: string }
+          description: Engine filter slug; omit to include all engines.
+          schema:
+            type: string
+            enum: [base-game, codename-engine, psych-engine, kade-engine, fps-plus, other]
         - name: category
           in: query
           required: false
-          schema: { type: string }
+          description: Category filter slug; omit to include all categories.
+          schema:
+            type: string
+            enum: [full-mods, modpacks, ports, scripts, tools, wips]
         - name: featured
           in: query
           required: false
-          schema: { type: boolean }
+          description: Set to `1` to return featured mods only.
+          schema: { type: string, enum: ['1'] }
         - name: page
           in: query
           required: false
@@ -409,23 +424,28 @@ paths:
         - name: ids
           in: query
           required: false
-          description: Comma-separated mod identifiers.
+          description: Comma-separated mod identifiers. Returns an object containing `mods` without pagination fields.
           schema: { type: string }
         - name: related
           in: query
           required: false
+          description: Mod identifier used to find related mods. Returns an object containing `mods` without pagination fields.
           schema: { type: string }
         - name: pick
           in: query
           required: false
-          schema: { type: boolean }
+          description: Set to `1` to return a single daily pick in the `pick` property.
+          schema: { type: string, enum: ['1'] }
       responses:
         '200':
-          description: Paginated mod search result.
+          description: Paginated result, unpaginated `mods` result for `ids` or `related`, or a single `pick` result for `pick=1`.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ModListResponse'
+                oneOf:
+                  - $ref: '#/components/schemas/ModListResponse'
+                  - $ref: '#/components/schemas/ModArrayResponse'
+                  - $ref: '#/components/schemas/ModPickResponse'
     post:
       tags: [Mod management]
       summary: Create a mod draft
@@ -480,6 +500,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Mod'
+    delete:
+      tags: [Mod management]
+      summary: Delete a mod
+      operationId: deleteMod
+      security:
+        - sessionCookie: []
+      responses:
+        default:
+          description: Deletes a mod owned by the current user; exact status and response body were not captured.
   /mods/{modId}/edit:
     parameters:
       - $ref: '#/components/parameters/ModId'
@@ -498,6 +527,8 @@ paths:
                 $ref: '#/components/schemas/ModEdit'
         '401':
           $ref: '#/components/responses/SessionRequired'
+        '404':
+          description: The mod does not exist or the current user cannot edit it.
   /mods/{modId}/card:
     parameters:
       - $ref: '#/components/parameters/ModId'
@@ -767,6 +798,7 @@ paths:
               required: [contents]
               properties:
                 contents: { type: string }
+                replyTo: { type: integer, description: ID of the comment being replied to. }
       responses:
         '201':
           description: Created comment.
@@ -774,6 +806,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Comment'
+  /mods/{modId}/comments/{commentId}:
+    parameters:
+      - $ref: '#/components/parameters/ModId'
+      - name: commentId
+        in: path
+        required: true
+        schema: { type: integer }
+    delete:
+      tags: [Mods]
+      summary: Delete a mod comment
+      operationId: deleteModComment
+      security:
+        - sessionCookie: []
+      responses:
+        default:
+          description: Deletes a comment by its owner or a moderator; exact status and response body were not captured.
   /mods/{modId}/votes:
     parameters:
       - $ref: '#/components/parameters/ModId'
@@ -1089,10 +1137,10 @@ paths:
                 properties:
                   incoming:
                     type: array
-                    items: { type: object, additionalProperties: true }
+                    items: { $ref: '#/components/schemas/UserCard' }
                   sent:
                     type: array
-                    items: { type: object, additionalProperties: true }
+                    items: { $ref: '#/components/schemas/UserCard' }
         '401':
           $ref: '#/components/responses/SessionRequired'
   /users/me/blocks:
@@ -1580,6 +1628,33 @@ paths:
           content:
             application/json:
               schema: { type: object, additionalProperties: true }
+  /discord/link:
+    delete:
+      tags: [Session]
+      summary: Disconnect the linked Discord account
+      operationId: disconnectDiscord
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        default:
+          description: Discord connection result; the frontend does not use a response body.
+  /discord/start:
+    get:
+      tags: [Session]
+      summary: Start linking a Discord account
+      description: The settings page links here to begin the Discord connection flow. The redirect response was not requested because it initiates OAuth.
+      operationId: startDiscordLink
+      security:
+        - sessionCookie: []
+      responses:
+        default:
+          description: Browser redirect to the Discord authorization flow; exact status and location were not captured.
   /users/me:
     patch:
       tags: [Session]
@@ -1732,6 +1807,33 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Post' }
+  /reports:
+    post:
+      tags: [Users]
+      summary: Submit a report
+      operationId: createReport
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [kind, target, reason, details]
+              properties:
+                kind: { type: string }
+                target:
+                  oneOf:
+                    - type: string
+                    - type: integer
+                    - type: object
+                      additionalProperties: true
+                reason: { type: string }
+                details: { type: string }
+      responses:
+        default:
+          description: Report acknowledgement; exact status and response body were not captured.
   /posts/{postId}:
     parameters:
       - name: postId
@@ -1955,15 +2057,19 @@ paths:
               type: object
               required: [title, entries]
               properties:
-                title: { type: string }
+                title: { type: string, maxLength: 60 }
                 entries:
                   type: array
+                  minItems: 1
+                  maxItems: 20
                   items:
                     type: object
                     required: [type, text]
                     properties:
-                      type: { type: string }
-                      text: { type: string }
+                      type:
+                        type: string
+                        enum: [Addition, Feature, Improvement, Tweak, Optimization, Overhaul, Bugfix, Removal]
+                      text: { type: string, maxLength: 200 }
       responses:
         default:
           description: Updated mod response; exact status and body were not captured.
@@ -1990,8 +2096,19 @@ paths:
             schema:
               type: object
               properties:
-                title: { type: string }
-                entries: { type: array, items: { type: object, additionalProperties: true } }
+                title: { type: string, maxLength: 60 }
+                entries:
+                  type: array
+                  minItems: 1
+                  maxItems: 20
+                  items:
+                    type: object
+                    required: [type, text]
+                    properties:
+                      type:
+                        type: string
+                        enum: [Addition, Feature, Improvement, Tweak, Optimization, Overhaul, Bugfix, Removal]
+                      text: { type: string, maxLength: 200 }
       responses:
         default:
           description: Updated mod response; exact status and body were not captured.
@@ -2286,6 +2403,8 @@ paths:
               schema: { type: array, items: { type: object, additionalProperties: true } }
         '401':
           $ref: '#/components/responses/SessionRequired'
+        '403':
+          description: The session is valid but lacks IP-ban management access.
     post:
       tags: [Staff]
       summary: Ban an IP address
@@ -2464,10 +2583,10 @@ paths:
         - sessionCookie: []
       responses:
         default:
-          description: Staff user details, standing, uploads, and reports; fields were not fully captured.
+          description: Staff user details, standing, warnings, reports, action log, mod records, and upload data.
           content:
             application/json:
-              schema: { type: object, additionalProperties: true }
+              schema: { $ref: '#/components/schemas/StaffUserRecord' }
   /staff/art/categories:
     post:
       tags: [Staff]
@@ -2643,6 +2762,8 @@ components:
         avatar: { type: integer }
         theme: { type: string }
         background: { type: integer }
+        canTalkAt: { type: integer }
+        canUploadAt: { type: integer }
         discord: { type: boolean }
         blocked: { type: array, items: { type: integer } }
     Settings:
@@ -2654,7 +2775,23 @@ components:
         friendRequests: { type: string }
         theme: { type: string }
         background: { type: integer }
-        discord: { type: object, additionalProperties: true }
+        hiddenWords: { type: string }
+        discord:
+          type: object
+          properties:
+            available: { type: boolean }
+            name: { type: [string, 'null'] }
+    Notification:
+      type: object
+      properties:
+        id: { type: integer }
+        type: { type: string }
+        from: { type: object, additionalProperties: true }
+        team: { type: [object, 'null'], additionalProperties: true }
+        mod: { type: [object, 'null'], additionalProperties: true }
+        text: { type: string }
+        at: { type: string, format: date-time }
+        read: { type: boolean }
     StaffOverview:
       type: object
       properties:
@@ -2715,6 +2852,19 @@ components:
         target: { type: [object, 'null'], additionalProperties: true }
         reason: { type: string }
         at: { type: string, format: date-time }
+    StaffUserRecord:
+      type: object
+      properties:
+        user: { $ref: '#/components/schemas/User' }
+        standing: { type: object, additionalProperties: true }
+        warnings: { type: array, items: {} }
+        reports: { type: array, items: { $ref: '#/components/schemas/StaffReport' } }
+        log: { type: array, items: { $ref: '#/components/schemas/StaffAction' } }
+        mods: { type: array, items: { $ref: '#/components/schemas/StaffMod' } }
+        resettable: { type: array, items: { type: string } }
+        uploads: { type: object, additionalProperties: true }
+        canAct: { type: boolean }
+        badges: { type: object, additionalProperties: true }
     SiteInfo:
       type: object
       properties:
@@ -2759,12 +2909,15 @@ components:
         id: { type: integer }
         username: { type: string }
         role: { type: string }
+        joined: { type: integer }
         ban: { type: [object, 'null'], additionalProperties: true }
         mute: { type: [object, 'null'], additionalProperties: true }
         restricted: { type: [object, 'null'], additionalProperties: true }
         avatar: { type: integer }
         theme: { type: string }
         background: { type: integer }
+        canTalkAt: { type: integer }
+        canUploadAt: { type: integer }
         discord: { type: boolean }
         blocked: { type: array, items: { type: integer } }
     ModSummary:
@@ -2800,6 +2953,18 @@ components:
         total: { type: integer }
         page: { type: integer }
         pages: { type: integer }
+    ModArrayResponse:
+      type: object
+      required: [mods]
+      properties:
+        mods:
+          type: array
+          items: { $ref: '#/components/schemas/ModSummary' }
+    ModPickResponse:
+      type: object
+      required: [pick]
+      properties:
+        pick: { $ref: '#/components/schemas/ModSummary' }
     ModInput:
       type: object
       properties:
@@ -2833,7 +2998,9 @@ components:
         wip: { type: boolean }
         stage: { type: string }
         progress: { type: integer }
-        todos: { type: array, items: {} }
+        todos:
+          type: array
+          items: { $ref: '#/components/schemas/ModTodo' }
     ModUpdate:
       allOf:
         - $ref: '#/components/schemas/ModInput'
@@ -2885,12 +3052,36 @@ components:
             socials: { type: array, items: { type: object, additionalProperties: true } }
             creator: { type: string }
             originalMod: { type: string }
-            updates: { type: array, items: { type: object, additionalProperties: true } }
+            updates:
+              type: array
+              items: { $ref: '#/components/schemas/ModReleaseUpdate' }
     Wip:
       type: object
       properties:
         stage: { type: string }
         progress: { type: number }
+        todos:
+          type: array
+          items: { $ref: '#/components/schemas/ModTodo' }
+    ModTodo:
+      type: object
+      properties:
+        text: { type: string }
+        done: { type: boolean }
+    ModReleaseUpdate:
+      type: object
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        entries:
+          type: array
+          items:
+            type: object
+            properties:
+              type: { type: string, enum: [Addition, Feature, Improvement, Tweak, Optimization, Overhaul, Bugfix, Removal] }
+              text: { type: string }
+        at: { type: string, format: date-time }
+        edited: { type: string }
     UserSummary:
       type: object
       properties:
